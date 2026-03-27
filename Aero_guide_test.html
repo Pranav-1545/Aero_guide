@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Aero-Guide</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #040810;
+    --panel: #070e1a;
+    --border: #0f2a4a;
+    --accent: #00c8ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff6b;
+    --text: #c8e0f0;
+    --text-dim: #4a7090;
+    --grid: #0a1f35;
+    --glow: 0 0 20px rgba(0,200,255,0.3);
+    --glow2: 0 0 20px rgba(255,107,53,0.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #root { height: 100vh; display: flex; flex-direction: column; }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+.topbar-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #00c8ff;
+  text-shadow:
+    0 0 4px rgba(0,200,255,0.25),
+    0 1px 2px rgba(0,0,0,0.8);
+}
+
+.topbar-logo span {
+  color: #00c8ff;
+}
+.topbar-logo:hover {
+  text-shadow:
+    0 0 8px rgba(0,200,255,0.6),
+    0 2px 6px rgba(0,0,0,0.8);
+}
+  .logo-icon { font-size: 20px; }
+  .topbar-center { display: flex; gap: 4px; }
+  .mode-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 5px 14px;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .mode-btn.active {
+    background: rgba(0,200,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--glow);
+  }
+  .mode-btn:hover:not(.active) {
+    border-color: var(--text-dim);
+    color: var(--text);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent3);
+    box-shadow: 0 0 8px var(--accent3);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  .status-text { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
+
+  /* MAIN LAYOUT */
+  .main-layout {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* RESIZER */
+  .resizer {
+    width: 5px;
+    background: var(--border);
+    cursor: col-resize;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s;
+    z-index: 5;
+  }
+  .resizer:hover, .resizer.dragging {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(0,200,255,0.5);
+  }
+  .resizer::after {
+    content: '⋮';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-dim);
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .resizer:hover::after { color: var(--accent); opacity: 1; }
+
+  /* PANELS */
+  .panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 120px;
+  }
+  .panel-right {
+    border-right: none;
+    border-left: 1px solid var(--border);
+  }
+  .panel-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .panel-header::before {
+    content: '';
+    width: 3px; height: 12px;
+    background: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  /* CHAT PANEL */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 3px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .msg {
+    padding: 10px 12px;
+    border-radius: 2px;
+    font-size: 12px;
+    line-height: 1.6;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
+  .msg-user {
+    background: rgba(0,200,255,0.06);
+    border-left: 2px solid var(--accent);
+    color: var(--text);
+    align-self: flex-end;
+    max-width: 95%;
+  }
+  .msg-ai {
+    background: rgba(255,107,53,0.05);
+    border-left: 2px solid var(--accent2);
+    color: var(--text-dim);
+    align-self: flex-start;
+    max-width: 95%;
+  }
+  .msg-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 7px;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    opacity: 0.6;
+  }
+  .msg-user .msg-label { color: var(--accent); }
+  .msg-ai .msg-label { color: var(--accent2); }
+
+  .chat-input-area {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 6px;
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    resize: none;
+    transition: border 0.2s;
+    border-radius: 2px;
+    min-height: 52px;
+  }
+  .chat-input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,200,255,0.1); }
+  .chat-input::placeholder { color: var(--text-dim); }
+  .send-btn {
+    background: rgba(0,200,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 12px;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-end;
+    height: 52px;
+    min-width: 56px;
+  }
+  .send-btn:hover { background: rgba(0,200,255,0.2); box-shadow: var(--glow); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .suggestions {
+    padding: 0 10px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    flex-shrink: 0;
+  }
+  .suggest-label { font-family: 'Orbitron', monospace; font-size: 7px; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 2px; }
+  .suggest-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 5px 8px;
+    text-align: left;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: all 0.2s;
+    border-radius: 2px;
+    line-height: 1.4;
+  }
+  .suggest-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,200,255,0.04); }
+
+  /* 3D VIEWER */
+  .viewer-area {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .viewer-canvas {
+    position: absolute; inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .viewer-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .viewer-grid-lines {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .viewer-corners::before, .viewer-corners::after,
+  .viewer-corner-bl::before, .viewer-corner-br::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: var(--accent);
+    border-style: solid;
+    opacity: 0.5;
+  }
+  .viewer-corners::before { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
+  .viewer-corners::after { top: 12px; right: 12px; border-width: 1px 1px 0 0; }
+  .viewer-corner-bl::before { bottom: 12px; left: 12px; border-width: 0 0 1px 1px; }
+  .viewer-corner-br::before { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
+
+  .viewer-info {
+    position: absolute;
+    bottom: 14px; left: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    line-height: 1.8;
+    pointer-events: none;
+  }
+  .viewer-info span { color: var(--accent); }
+
+  .viewer-aircraft-name {
+    position: absolute;
+    top: 14px; left: 50%; transform: translateX(-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .viewer-no-model {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .viewer-no-model-icon {
+    font-size: 64px; opacity: 0.08; margin-bottom: 16px;
+  }
+  .viewer-no-model-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    opacity: 0.4;
+    text-align: center;
+    line-height: 2;
+  }
+
+  /* LOADING */
+  .loading-overlay {
+    position: absolute; inset: 0;
+    background: rgba(4,8,16,0.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 20;
+  }
+  .loading-ring {
+    width: 48px; height: 48px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  /* LAYER CONTROLS */
+  .layers-grid {
+    padding: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .layer-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 6px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: all 0.2s;
+    border-radius: 2px;
+    text-align: left;
+  }
+  .layer-btn.active {
+    background: rgba(0,200,255,0.07);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .layer-btn:hover:not(.active) { border-color: var(--text-dim); color: var(--text); }
+  .layer-dot {
+    width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+    background: currentColor;
+  }
+
+  /* PARAMS PANEL */
+  .params-scroll {
+    flex: 1; overflow-y: auto; padding: 10px;
+  }
+  .params-scroll::-webkit-scrollbar { width: 3px; }
+  .params-scroll::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .param-section { margin-bottom: 14px; }
+  .param-section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 7px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .param-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(15,42,74,0.4);
+  }
+  .param-key {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .param-val {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    text-align: right;
+    max-width: 55%;
+    word-break: break-word;
+  }
+  .param-val.orange { color: var(--accent2); }
+  .param-val.green { color: var(--accent3); }
+  .no-params {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    padding: 30px 10px;
+    line-height: 2;
+    opacity: 0.5;
+  }
+
+  /* SUMMARY CARD */
+  .summary-card {
+    margin: 10px;
+    padding: 10px;
+    background: rgba(0,200,255,0.04);
+    border: 1px solid rgba(0,200,255,0.15);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .summary-type {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .summary-sub { font-size: 10px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
+
+  /* ERROR */
+  .error-msg {
+    background: rgba(255,50,50,0.08);
+    border-left: 2px solid #ff3333;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #ff8888;
+    font-family: 'Share Tech Mono', monospace;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── AIRCRAFT RULES ENGINE ─────────────────────────────────────────────────
+function inferAircraftParams(text) {
+  const t = text.toLowerCase();
+  let p = {
+    aircraft_type: "Light Aircraft", passengers: 2, range_km: 500,
+    cruise_speed_kmh: 200, engine_type: "Piston", number_of_engines: 1,
+    wing_type: "High Wing", tail_type: "Conventional", landing_gear: "Fixed Tricycle",
+    material: "Aluminum Alloy", wingspan_m: 10, length_m: 7, height_m: 2.5,
+    max_takeoff_weight_kg: 600, fuel_type: "Avgas 100LL"
+  };
+  // passengers
+  const paxMatch = t.match(/(\d+)\s*(?:seat|passenger|pax|seater)/);
+  const paxNum = paxMatch ? parseInt(paxMatch[1]) :
+    t.includes('single') ? 1 : t.includes('twin') ? 2 :
+    t.includes('regional') ? 50 : t.includes('narrow') ? 160 :
+    t.includes('wide') ? 300 : t.includes('jumbo') ? 400 :
+    t.includes('commuter') ? 9 : 2;
+  p.passengers = paxNum;
+  // range
+  const rngMatch = t.match(/(\d{3,5})\s*km/);
+  if (rngMatch) p.range_km = parseInt(rngMatch[1]);
+  else if (t.includes('long range') || t.includes('intercontinental')) p.range_km = 12000;
+  else if (t.includes('medium range')) p.range_km = 5000;
+  else if (t.includes('short range')) p.range_km = 1500;
+  // classify by pax
+  if (paxNum <= 2) {
+    p.aircraft_type = "Ultralight / Light Aircraft"; p.engine_type = "Piston";
+    p.number_of_engines = 1; p.wing_type = "High Wing"; p.landing_gear = "Fixed Tailwheel";
+    p.wingspan_m = 10; p.length_m = 7; p.height_m = 2.5; p.max_takeoff_weight_kg = 600;
+    p.fuel_type = "Avgas 100LL"; p.material = "Aluminum Alloy";
+    if (!rngMatch) p.range_km = 600; p.cruise_speed_kmh = 190;
+  } else if (paxNum <= 12) {
+    p.aircraft_type = "Commuter / Turboprop"; p.engine_type = "Turboprop";
+    p.number_of_engines = 2; p.wing_type = "High Wing"; p.landing_gear = "Retractable Tricycle";
+    p.wingspan_m = 18; p.length_m = 14; p.height_m = 5; p.max_takeoff_weight_kg = 7000;
+    p.fuel_type = "Jet-A1"; p.material = "Aluminum Alloy";
+    if (!rngMatch) p.range_km = 1500; p.cruise_speed_kmh = 450; p.tail_type = "Conventional";
+  } else if (paxNum <= 80) {
+    p.aircraft_type = "Regional Turboprop / RJ"; p.engine_type = "Turboprop";
+    p.number_of_engines = 2; p.wing_type = "Low Wing"; p.landing_gear = "Retractable Tricycle";
+    p.wingspan_m = 27; p.length_m = 22; p.height_m = 7; p.max_takeoff_weight_kg = 22000;
+    p.fuel_type = "Jet-A1"; p.material = "Aluminum Alloy / Composites";
+    if (!rngMatch) p.range_km = 2500; p.cruise_speed_kmh = 540; p.tail_type = "T-Tail";
+  } else if (paxNum <= 220) {
+    p.aircraft_type = "Narrow Body Jet"; p.engine_type = "Turbofan";
+    p.number_of_engines = 2; p.wing_type = "Swept Low Wing"; p.landing_gear = "Retractable Tricycle";
+    p.wingspan_m = 36; p.length_m = 38; p.height_m = 12; p.max_takeoff_weight_kg = 79000;
+    p.fuel_type = "Jet-A1"; p.material = "Aluminum / CFRP Composites";
+    if (!rngMatch) p.range_km = 5500; p.cruise_speed_kmh = 840; p.tail_type = "Conventional";
+  } else {
+    p.aircraft_type = "Wide Body Jet"; p.engine_type = "High-Bypass Turbofan";
+    p.number_of_engines = t.includes('4 engine') || t.includes('quad') ? 4 : 2;
+    p.wing_type = "Swept Low Wing"; p.landing_gear = "Multi-Bogie Retractable";
+    p.wingspan_m = 64; p.length_m = 70; p.height_m = 19; p.max_takeoff_weight_kg = 412000;
+    p.fuel_type = "Jet-A1"; p.material = "Aluminum / CFRP / Titanium";
+    if (!rngMatch) p.range_km = 13000; p.cruise_speed_kmh = 905; p.tail_type = "Conventional";
+  }
+  // modifiers
+  if (t.includes('cargo') || t.includes('freight')) {
+    p.aircraft_type = p.aircraft_type.replace('Jet','Freighter').replace('Aircraft','Cargo');
+    p.wing_type = p.wing_type.includes('Low') ? p.wing_type : 'High Wing';
+    p.tail_type = 'T-Tail'; p.passengers = 0;
+  }
+  if (t.includes('fighter') || t.includes('military') || t.includes('combat')) {
+    p.aircraft_type = "Fighter / Combat Aircraft"; p.engine_type = "Afterburning Turbofan";
+    p.wing_type = "Delta Wing"; p.tail_type = "Twin Fin"; p.landing_gear = "Retractable Tricycle";
+    p.wingspan_m = 11; p.length_m = 16; p.height_m = 5; p.max_takeoff_weight_kg = 22000;
+    p.cruise_speed_kmh = 1800; p.fuel_type = "JP-8"; p.number_of_engines = 2;
+    p.material = "Titanium / CFRP Stealth Composites"; p.range_km = 3200;
+  }
+  if (t.includes('trainer') || t.includes('training')) {
+    p.aircraft_type = "Trainer Aircraft"; p.wing_type = "Straight Low Wing";
+    p.number_of_engines = 1; p.landing_gear = "Fixed Tricycle";
+  }
+  if (t.includes('stol') || t.includes('short runway') || t.includes('bush')) {
+    p.wing_type = "High Wing (STOL)"; p.landing_gear = "Fixed Tundra";
+  }
+  if (t.includes('electric') || t.includes('evsol') || t.includes('evtol')) {
+    p.engine_type = "Electric Motor"; p.fuel_type = "Li-Ion Battery";
+    p.aircraft_type = "Electric / eVTOL";
+  }
+  if (t.includes('budget') || t.includes('low cost')) {
+    p.material = "Steel Tube + Fabric / Aluminum";
+    p.landing_gear = p.landing_gear.includes('Retractable') ? 'Fixed Tricycle' : p.landing_gear;
+  }
+  if (t.includes('supersonic')) { p.cruise_speed_kmh = 2100; p.wing_type = "Delta Swept Wing"; }
+  if (t.includes('long range') && !rngMatch) p.range_km = 12000;
+  if (t.includes('india') || t.includes('domestic')) { if (!rngMatch) p.range_km = Math.min(p.range_km, 3000); }
+  return p;
+}
+
+// ─── DESIGN ENGINE (local inference, instant + reliable) ──────────────────
+async function callLLM(userText) {
+  // Simulate a brief processing delay for UX realism
+  await new Promise(r => setTimeout(r, 900));
+  return JSON.stringify(inferAircraftParams(userText));
+}
+
+// ─── THREE.JS AIRCRAFT BUILDER ─────────────────────────────────────────────
+function buildAircraftModel(params, layers, mode) {
+  const group = new THREE.Group();
+  const p = params;
+  const sl = p.length_m / 10;
+  const ws = p.wingspan_m / p.length_m;
+  const isConcept = mode === 'concept';
+  const isHigh  = p.wing_type.toLowerCase().includes('high');
+  const isSwept = p.wing_type.toLowerCase().includes('swept') || p.wing_type.toLowerCase().includes('delta');
+  const isProp  = p.engine_type.includes('Piston') || p.engine_type.includes('Turboprop');
+  const isJet   = !isProp;
+
+  // ── BLUEPRINT PALETTE
+  const C_PAPER  = 0xe8ddb5;   // cream lines (bright)
+  const C_DIM    = 0x8a7a50;   // dim internal structure
+  const C_ACCENT = 0xfff0b0;   // bright accent edges
+
+  // ── REALISTIC MATERIALS  (smooth, shaded)
+  const matFuse = new THREE.MeshPhongMaterial({ color:0xdce4f0, shininess:110, specular:0xaabbcc });
+  const matWing = new THREE.MeshPhongMaterial({ color:0xc8d4e8, shininess:80,  specular:0x8899aa });
+  const matEng  = new THREE.MeshPhongMaterial({ color:0x5a5a62, shininess:160, specular:0xccccdd });
+  const matEngD = new THREE.MeshPhongMaterial({ color:0x1a1a20, shininess:20 });
+  const matGlas = new THREE.MeshPhongMaterial({ color:0x88c4ee, transparent:true, opacity:0.55, shininess:250, specular:0xffffff });
+  const matGear = new THREE.MeshPhongMaterial({ color:0x2e2e32, shininess:40 });
+  const matTyre = new THREE.MeshPhongMaterial({ color:0x101012, shininess:8 });
+  const matRim  = new THREE.MeshPhongMaterial({ color:0x888898, shininess:180, specular:0xffffff });
+  const matLiv  = new THREE.MeshPhongMaterial({ color:0x1155cc, shininess:70 });
+  const matRud  = new THREE.MeshPhongMaterial({ color:0xb8c4d8, shininess:60 });
+
+  // ── HELPERS ────────────────────────────────────────────────────────────────
+  // Add solid mesh (realistic) or transparent + edge lines (concept)
+  const bpLineMat  = () => new THREE.LineBasicMaterial({ color: C_PAPER });
+  const bpLineDim  = () => new THREE.LineBasicMaterial({ color: C_DIM });
+
+  const addMesh = (grp, geo, mat, px=0, py=0, pz=0, rx=0, ry=0, rz=0, sx=1, sy=1, sz=1) => {
+    if (isConcept) {
+      // Transparent ghost fill
+      const ghost = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0x0d1a2e, transparent:true, opacity:0.0, side:THREE.DoubleSide}));
+      ghost.position.set(px,py,pz); ghost.rotation.set(rx,ry,rz); ghost.scale.set(sx,sy,sz);
+      grp.add(ghost);
+      // Crisp edge lines
+      const edgeGeo = new THREE.EdgesGeometry(geo, 10);
+      const lines = new THREE.LineSegments(edgeGeo, bpLineMat());
+      lines.position.set(px,py,pz); lines.rotation.set(rx,ry,rz); lines.scale.set(sx,sy,sz);
+      grp.add(lines);
+    } else {
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(px,py,pz); mesh.rotation.set(rx,ry,rz); mesh.scale.set(sx,sy,sz);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      grp.add(mesh);
+    }
+  };
+
+  // Add a raw line set (concept only)
+  const addLines = (grp, positions, dim=false) => {
+    if (!isConcept) return;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    grp.add(new THREE.LineSegments(geo, dim ? bpLineDim() : bpLineMat()));
+  };
+
+  // Dense triangulation mesh over a cylinder (the blueprint "net" look)
+  const addCylTriNet = (grp, x0, x1, r0, r1, steps=8, rings=5) => {
+    if (!isConcept) return;
+    const pts = [];
+    for (let ri = 0; ri <= rings; ri++) {
+      const t = ri/rings, x = x0 + (x1-x0)*t, r = r0 + (r1-r0)*t;
+      for (let s = 0; s < steps; s++) {
+        const a = (s/steps)*Math.PI*2;
+        pts.push([x, Math.cos(a)*r, Math.sin(a)*r]);
+      }
+    }
+    const lines = [];
+    const idx = (ri, s) => ri*(steps) + s;
+    for (let ri = 0; ri < rings; ri++) {
+      for (let s = 0; s < steps; s++) {
+        const ns = (s+1)%steps;
+        const a = pts[idx(ri,s)], b = pts[idx(ri,ns)];
+        const c = pts[idx(ri+1,s)], d = pts[idx(ri+1,ns)];
+        // ring circle
+        lines.push(...a, ...b);
+        // longeron
+        lines.push(...a, ...c);
+        // diagonal (every other to avoid clutter)
+        if ((ri+s)%2 === 0) lines.push(...b, ...c);
+      }
+    }
+    addLines(grp, lines, true);
+  };
+
+  // Dense rib+spar net across a wing panel
+  const addWingNet = (grp, x0, z0, x1, z1, yBase, ribs=6, spars=4) => {
+    if (!isConcept) return;
+    const lines = [];
+    for (let r = 0; r <= ribs; r++) {
+      const t = r/ribs;
+      const xA = x0 + (x1-x0)*t, zA = z0 + (z1-z0)*t;
+      const xB = x0 + (x1-x0)*t + (x1-x0)*0.8/ribs;
+      lines.push(xA, yBase, zA,  xB, yBase, zA);
+    }
+    for (let s = 0; s <= spars; s++) {
+      const t = s/spars;
+      const xA = x0*(1-t) + (x0 + (x1-x0)*1.0)*t;
+      const zA_s = z0, zA_e = z1;
+      lines.push(xA, yBase, zA_s,  xA + (x1-x0)*0.3, yBase, zA_e);
+    }
+    // cross-diagonals
+    for (let r = 0; r < ribs; r++) {
+      const t0=r/ribs, t1=(r+1)/ribs;
+      const x0r = x0+(x1-x0)*t0, z0r = z0+(z1-z0)*t0;
+      const x1r = x0+(x1-x0)*t1, z1r = z0+(z1-z0)*t1;
+      if (r%2===0) lines.push(x0r,yBase,z0r, x1r+0.6*(x1-x0)/ribs,yBase,z1r);
+    }
+    addLines(grp, lines, true);
+  };
+
+  // ── FUSELAGE ────────────────────────────────────────────────────────────────
+  const fuselageGroup = new THREE.Group(); fuselageGroup.name = 'fuselage';
+  if (layers.fuselage) {
+    const S = isConcept ? 8 : 24;
+    // Nose cone
+    addMesh(fuselageGroup, new THREE.ConeGeometry(0.09*sl, 0.40*sl, S),
+            matFuse, 0.61*sl, 0, 0,  0,0,-Math.PI/2);
+    // Main cylinder
+    addMesh(fuselageGroup, new THREE.CylinderGeometry(0.09*sl, 0.09*sl, 0.82*sl, S),
+            matFuse, 0.18*sl, 0, 0,  0,0,Math.PI/2);
+    // Tail taper
+    addMesh(fuselageGroup, new THREE.CylinderGeometry(0.09*sl, 0.030*sl, 0.44*sl, S),
+            matFuse, -0.30*sl, 0, 0,  0,0,Math.PI/2);
+
+    // Blueprint triangulation net
+    addCylTriNet(fuselageGroup, -0.52*sl, 0.60*sl, 0.025*sl, 0.09*sl, 8, 7);
+
+    if (!isConcept) {
+      // Cockpit canopy
+      const canGeo = new THREE.SphereGeometry(0.078*sl, 16, 10, 0, Math.PI*2, 0, Math.PI*0.50);
+      const can = new THREE.Mesh(canGeo, matGlas);
+      can.position.set(0.44*sl, 0.054*sl, 0);
+      can.castShadow = true;
+      fuselageGroup.add(can);
+      // Livery band
+      const strGeo = new THREE.CylinderGeometry(0.0918*sl, 0.0918*sl, 0.28*sl, 24);
+      const str = new THREE.Mesh(strGeo, matLiv);
+      str.rotation.z = Math.PI/2; str.position.set(0.28*sl,0,0);
+      fuselageGroup.add(str);
+      // Belly fairing
+      const bGeo = new THREE.CylinderGeometry(0.038*sl, 0.038*sl, 0.48*sl, 12);
+      const bel = new THREE.Mesh(bGeo, matFuse);
+      bel.rotation.z = Math.PI/2; bel.position.set(0.1*sl,-0.088*sl,0);
+      fuselageGroup.add(bel);
+      // Passenger windows
+      if (p.passengers > 3) {
+        const nW = Math.min(Math.floor(p.passengers/2), 14);
+        for (let i=0; i<nW; i++) {
+          const wg = new THREE.BoxGeometry(0.032*sl, 0.026*sl, 0.005);
+          [1,-1].forEach(side => {
+            const wm = new THREE.Mesh(wg, matGlas);
+            wm.position.set(0.36*sl-i*0.072*sl, 0.087*sl, side*0.092*sl);
+            fuselageGroup.add(wm);
+          });
+        }
+      }
+    }
+  }
+  group.add(fuselageGroup);
+
+  // ── WINGS ────────────────────────────────────────────────────────────────────
+  const wingGroup = new THREE.Group(); wingGroup.name = 'wings';
+  if (layers.wings) {
+    const spanH   = ws * sl * 0.54;
+    const rootC   = 0.25*sl;
+    const tipC    = isSwept ? 0.09*sl : 0.17*sl;
+    const sweepX  = isSwept ? 0.24*sl : 0.0;
+    const wingY   = isHigh  ? 0.088*sl : -0.058*sl;
+    const wThick  = 0.020*sl;
+    const S = isConcept ? 1 : 2;
+
+    const buildWing = (side) => {
+      const sg = side;
+      const wg = new THREE.Group();
+
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(rootC, 0);
+      shape.lineTo(rootC*(tipC/rootC) + sweepX, spanH);
+      shape.lineTo(sweepX*0.25, spanH);
+      shape.lineTo(0, 0);
+      const ext = new THREE.ExtrudeGeometry(shape, { depth: wThick, bevelEnabled: false, steps: S });
+      ext.rotateX(Math.PI / 2);
+
+      addMesh(wg, ext, matWing, -rootC*0.45+0.04*sl, wingY, 0,  0,0,0,  1,1,sg);
+
+      // Blueprint rib+spar net
+      addWingNet(wg, -rootC*0.4+0.04*sl, sg*0.05*sl, sweepX-rootC*0.1, sg*spanH*0.98, wingY, 7, 4);
+
+      if (!isConcept) {
+        // Flap
+        const fGeo = new THREE.BoxGeometry(rootC*0.28, wThick*0.7, spanH*0.48);
+        const flap = new THREE.Mesh(fGeo, matWing);
+        flap.position.set(-rootC*0.1, wingY-wThick*0.35, sg*spanH*0.32);
+        wg.add(flap);
+        // Aileron
+        const aGeo = new THREE.BoxGeometry(tipC*0.33, wThick*0.65, spanH*0.28);
+        const ail  = new THREE.Mesh(aGeo, matRud);
+        ail.position.set(sweepX*0.6, wingY-wThick*0.3, sg*spanH*0.78);
+        wg.add(ail);
+        // Winglet
+        if (isSwept || p.range_km > 3500) {
+          const wlGeo = new THREE.BoxGeometry(0.017*sl, 0.10*sl, wThick);
+          const wl = new THREE.Mesh(wlGeo, matWing);
+          wl.position.set(sweepX*0.8, wingY+0.03*sl, sg*spanH);
+          wl.rotation.z = sg*0.32;
+          wg.add(wl);
+        }
+      }
+      return wg;
+    };
+    wingGroup.add(buildWing(1));
+    wingGroup.add(buildWing(-1));
+  }
+  group.add(wingGroup);
+
+  // ── TAIL ──────────────────────────────────────────────────────────────────────
+  const tailGroup = new THREE.Group(); tailGroup.name = 'tail';
+  if (layers.tail) {
+    const isTT   = p.tail_type.toLowerCase().includes('t-tail');
+    const vsX    = -0.52*sl, vsH = 0.22*sl, vsC = 0.16*sl;
+    const hsSpan = 0.32*sl * ws * 0.52;
+    const hsC = 0.11*sl, hsThick = 0.013*sl;
+    const S = isConcept ? 1 : 2;
+
+    // Vertical fin
+    const vsShape = new THREE.Shape();
+    vsShape.moveTo(0,0); vsShape.lineTo(vsC,0);
+    vsShape.lineTo(vsC*0.35, vsH); vsShape.lineTo(0, vsH*0.72);
+    vsShape.lineTo(0,0);
+    const vsGeo = new THREE.ExtrudeGeometry(vsShape, { depth:0.013*sl, bevelEnabled:false, steps:S });
+    addMesh(tailGroup, vsGeo, matWing, vsX, 0.02*sl, -0.006*sl);
+
+    // Rib lines on fin
+    if (isConcept) {
+      const fl = [];
+      for (let i=1;i<5;i++) {
+        const t=i/5, y=vsH*t, xB=vsC*(1-t*0.65);
+        fl.push(vsX,0.02*sl+y,0, vsX+xB,0.02*sl+y,0);
+        fl.push(vsX+xB,0.02*sl+y,0, vsX+vsC*(1-t*0.3),0.02*sl,0);
+      }
+      addLines(tailGroup, fl, true);
+    }
+
+    // Horizontal stabs
+    const hsY = isTT ? 0.02*sl + vsH*0.92 : 0.025*sl;
+    [1,-1].forEach(sg => {
+      const hsShape = new THREE.Shape();
+      hsShape.moveTo(0,0); hsShape.lineTo(hsC,0);
+      hsShape.lineTo(hsC*0.52,hsSpan); hsShape.lineTo(0,hsSpan); hsShape.lineTo(0,0);
+      const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth:hsThick, bevelEnabled:false, steps:S });
+      hsGeo.rotateX(Math.PI/2); hsGeo.rotateZ(Math.PI/2);
+      addMesh(tailGroup, hsGeo, matWing, vsX+0.01*sl, hsY, 0,  0,0,0,  1,1,sg);
+      if (isConcept) {
+        const rl=[]; for(let r=1;r<4;r++){const t=r/4,z=sg*hsSpan*t;rl.push(vsX+hsC*t*0.2,hsY,z, vsX+hsC*(1-t*0.4),hsY,z);}
+        addLines(tailGroup, rl, true);
+      }
+      if (!isConcept) {
+        const eGeo = new THREE.BoxGeometry(hsC*0.36, hsThick*0.8, hsSpan*0.52);
+        const el = new THREE.Mesh(eGeo, matRud);
+        el.position.set(vsX-hsC*0.08, hsY, sg*hsSpan*0.34);
+        tailGroup.add(el);
+      }
+    });
+    if (!isConcept) {
+      const rudGeo = new THREE.BoxGeometry(vsC*0.30, vsH*0.58, 0.012*sl);
+      const rud = new THREE.Mesh(rudGeo, matRud);
+      rud.position.set(vsX-vsC*0.04, 0.02*sl+vsH*0.28, 0);
+      tailGroup.add(rud);
+    }
+  }
+  group.add(tailGroup);
+
+  // ── ENGINES ──────────────────────────────────────────────────────────────────
+  const engineGroup = new THREE.Group(); engineGroup.name = 'engines';
+  if (layers.engines) {
+    const numEng = p.number_of_engines;
+    const engR   = sl * (isJet ? 0.075 : 0.050);
+    const engLen = isJet ? 0.32*sl : 0.16*sl;
+    const S = isConcept ? 8 : 20;
+    const wingY = isHigh ? 0.088*sl : -0.058*sl;
+    const engY  = isHigh ? wingY + 0.04*sl : wingY - 0.075*sl;
+    const spanH = ws * sl * 0.54;
+
+    const makeEng = (ex, ey, ez) => {
+      const eg = new THREE.Group();
+      // Nacelle
+      addMesh(eg, new THREE.CylinderGeometry(engR, engR*0.86, engLen, S), matEng, 0,0,0, 0,0,Math.PI/2);
+      // Blueprint cylinder net
+      addCylTriNet(eg, -engLen/2, engLen/2, 0, engR, 8, 4);
+
+      if (!isConcept) {
+        const lipGeo = new THREE.TorusGeometry(engR*1.05, engR*0.09, 8, S);
+        const lip = new THREE.Mesh(lipGeo, matEng);
+        lip.rotation.y=Math.PI/2; lip.position.x=engLen/2; eg.add(lip);
+        const fanGeo = new THREE.CylinderGeometry(engR*0.88, engR*0.88, 0.012*sl, S);
+        const fan = new THREE.Mesh(fanGeo, matEngD);
+        fan.rotation.z=Math.PI/2; fan.position.x=engLen/2-0.008*sl; eg.add(fan);
+        const exGeo = new THREE.CylinderGeometry(engR*0.68, engR*0.58, engLen*0.20, S);
+        const ex_ = new THREE.Mesh(exGeo, matEngD);
+        ex_.rotation.z=Math.PI/2; ex_.position.x=-(engLen/2+engLen*0.09); eg.add(ex_);
+        if (isJet) {
+          const pylGeo = new THREE.BoxGeometry(0.05*sl, Math.abs(engY-wingY)*0.85, 0.022*sl);
+          const pyl = new THREE.Mesh(pylGeo, matFuse);
+          pyl.position.y = (engY<wingY?-1:1)*Math.abs(engY-wingY)*0.42;
+          eg.add(pyl);
+        }
+      }
+
+      if (isProp) {
+        if (isConcept) {
+          // Blueprint prop disc circle
+          const pts=[];
+          for(let i=0;i<=32;i++){const a=(i/32)*Math.PI*2; pts.push(Math.cos(a)*0.20*sl, Math.sin(a)*0.20*sl, 0);}
+          const cg=new THREE.BufferGeometry(); cg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+          const disc=new THREE.LineLoop(cg, bpLineMat());
+          disc.rotation.y=Math.PI/2; disc.position.x=engLen/2+0.02*sl;
+          eg.add(disc);
+          // Cross lines
+          const cl=[-0.20*sl,0,0, 0.20*sl,0,0, 0,-0.20*sl,0, 0,0.20*sl,0];
+          const cg2=new THREE.BufferGeometry(); cg2.setAttribute('position',new THREE.Float32BufferAttribute(cl,3));
+          const cross=new THREE.LineSegments(cg2,bpLineDim());
+          cross.rotation.y=Math.PI/2; cross.position.x=engLen/2+0.02*sl;
+          eg.add(cross);
+        } else {
+          for(let b=0;b<3;b++){
+            const bGeo=new THREE.BoxGeometry(0.005*sl,0.22*sl,0.038*sl);
+            const bl=new THREE.Mesh(bGeo,new THREE.MeshPhongMaterial({color:0x181e18,shininess:50}));
+            bl.rotation.z=b*(Math.PI*2/3); bl.position.x=engLen/2+0.018*sl;
+            eg.add(bl);
+          }
+          const spGeo=new THREE.ConeGeometry(0.026*sl,0.058*sl,12);
+          const sp=new THREE.Mesh(spGeo,new THREE.MeshPhongMaterial({color:0xff6b35,shininess:90}));
+          sp.rotation.z=-Math.PI/2; sp.position.x=engLen/2+0.058*sl;
+          eg.add(sp);
+        }
+      }
+      eg.position.set(ex,ey,ez);
+      return eg;
+    };
+
+    if (numEng===1) {
+      engineGroup.add(makeEng(isProp?0.62*sl:0.08*sl, isProp?0:engY, 0));
+    } else if (numEng===2) {
+      const ez=spanH*0.42;
+      engineGroup.add(makeEng(0.06*sl,engY,ez));
+      engineGroup.add(makeEng(0.06*sl,engY,-ez));
+    } else if (numEng===4) {
+      [0.28,0.56].forEach(t=>{
+        const ez=spanH*t;
+        engineGroup.add(makeEng(0.04*sl,engY,ez));
+        engineGroup.add(makeEng(0.04*sl,engY,-ez));
+      });
+    }
+  }
+  group.add(engineGroup);
+
+  // ── LANDING GEAR ──────────────────────────────────────────────────────────────
+  const gearGroup = new THREE.Group(); gearGroup.name = 'landingGear';
+  if (layers.landingGear) {
+    const S = isConcept ? 6 : 16;
+    const makeWheel = (ex,ey,ez) => {
+      const g = new THREE.Group();
+      addMesh(g, new THREE.CylinderGeometry(0.009*sl,0.009*sl,0.14*sl, isConcept?4:8),
+              matGear, 0,0.07*sl,0);
+      const wGeo = new THREE.TorusGeometry(0.044*sl,0.019*sl, isConcept?4:8, S);
+      if (isConcept) {
+        const ghost=new THREE.Mesh(wGeo,new THREE.MeshBasicMaterial({transparent:true,opacity:0}));
+        ghost.rotation.x=Math.PI/2; g.add(ghost);
+        const wE=new THREE.LineSegments(new THREE.EdgesGeometry(wGeo),bpLineMat());
+        wE.rotation.x=Math.PI/2; g.add(wE);
+      } else {
+        const wm=new THREE.Mesh(wGeo,matTyre); wm.rotation.x=Math.PI/2; g.add(wm);
+        const rGeo=new THREE.CylinderGeometry(0.028*sl,0.028*sl,0.017*sl,S);
+        const rm=new THREE.Mesh(rGeo,matRim); g.add(rm);
+        const dGeo=new THREE.CylinderGeometry(0.019*sl,0.019*sl,0.013*sl,S);
+        const dm=new THREE.Mesh(dGeo,new THREE.MeshPhongMaterial({color:0x880000,shininess:60})); g.add(dm);
+      }
+      g.position.set(ex,ey,ez);
+      return g;
+    };
+    gearGroup.add(makeWheel(0.42*sl,-0.10*sl,0));
+    const gz=0.12*sl*ws*0.28;
+    gearGroup.add(makeWheel(-0.06*sl,-0.10*sl, gz));
+    gearGroup.add(makeWheel(-0.06*sl,-0.10*sl,-gz));
+    if (p.landing_gear.includes('Multi') || p.max_takeoff_weight_kg>200000) {
+      gearGroup.add(makeWheel(-0.14*sl,-0.10*sl, gz*1.4));
+      gearGroup.add(makeWheel(-0.14*sl,-0.10*sl,-gz*1.4));
+    }
+  }
+  group.add(gearGroup);
+
+  // ── CABIN ───────────────────────────────────────────────────────────────────
+  const cabinGroup = new THREE.Group(); cabinGroup.name = 'cabin';
+  if (layers.cabin && p.passengers > 0 && !isConcept) {
+    [-1,1].forEach(s=>{
+      const dg=new THREE.BoxGeometry(0.062*sl,0.098*sl,0.004);
+      const dm=new THREE.Mesh(dg,new THREE.MeshPhongMaterial({color:0x334455,shininess:40}));
+      dm.position.set(0.30*sl,0.012*sl,s*0.092*sl);
+      cabinGroup.add(dm);
+    });
+  }
+  group.add(cabinGroup);
+
+  // ── INTERNAL STRUCTURE (concept: longeron + frame sketch) ───────────────────
+  const structGroup = new THREE.Group(); structGroup.name = 'structure';
+  if (layers.structure && isConcept) {
+    const fl=[];
+    [0.07,-0.07].forEach(y=>[0.07,-0.07].forEach(z=>fl.push(-0.55*sl,y*sl,z*sl, 0.6*sl,y*sl,z*sl)));
+    for(let i=-4;i<=5;i++){
+      const x=i*0.12*sl;
+      fl.push(x,-0.08*sl,-0.08*sl, x,0.08*sl,-0.08*sl);
+      fl.push(x,0.08*sl,-0.08*sl,  x,0.08*sl, 0.08*sl);
+      fl.push(x,0.08*sl, 0.08*sl,  x,-0.08*sl,0.08*sl);
+      fl.push(x,-0.08*sl,0.08*sl,  x,-0.08*sl,-0.08*sl);
+      fl.push(x,-0.08*sl,-0.08*sl, x,0.08*sl,0.08*sl);
+    }
+    const fg=new THREE.BufferGeometry();
+    fg.setAttribute('position',new THREE.Float32BufferAttribute(fl,3));
+    structGroup.add(new THREE.LineSegments(fg,new THREE.LineBasicMaterial({color:0x4488aa,transparent:true,opacity:0.55})));
+  }
+  group.add(structGroup);
+
+  // ── FUEL TANKS ──────────────────────────────────────────────────────────────
+  const fuelGroup = new THREE.Group(); fuelGroup.name = 'fuelTanks';
+  if (layers.fuelTanks) {
+    const spanH=ws*sl*0.52, wingY=isHigh?0.088*sl:-0.055*sl;
+    if (isConcept) {
+      const tg=new THREE.BoxGeometry(0.14*sl,0.017*sl,spanH*0.68);
+      const tm=new THREE.Mesh(tg,new THREE.MeshBasicMaterial({color:0x7fff6b,transparent:true,opacity:0.12}));
+      tm.position.set(0.02*sl,wingY,0); fuelGroup.add(tm);
+      const te=new THREE.LineSegments(new THREE.EdgesGeometry(tg),new THREE.LineBasicMaterial({color:0x7fff6b}));
+      te.position.copy(tm.position); fuelGroup.add(te);
+    } else {
+      const tg=new THREE.BoxGeometry(0.12*sl,0.015*sl,spanH*0.64);
+      const tm=new THREE.Mesh(tg,new THREE.MeshPhongMaterial({color:0x2a5a2a,transparent:true,opacity:0.32}));
+      tm.position.set(0.02*sl,wingY,0); fuelGroup.add(tm);
+    }
+  }
+  group.add(fuelGroup);
+
+  group.rotation.y = Math.PI/14;
+  return group;
+}
+
+// ─── LAYER CONFIG ─────────────────────────────────────────────────────────
+const LAYER_CONFIG = [
+  { key: 'fuselage',    label: 'Fuselage', icon: '▬' },
+  { key: 'wings',       label: 'Wings',    icon: '◀▶' },
+  { key: 'engines',     label: 'Engines',  icon: '⊙' },
+  { key: 'tail',        label: 'Tail',     icon: '△' },
+  { key: 'landingGear', label: 'Gear',     icon: '⊕' },
+  { key: 'cabin',       label: 'Cabin',    icon: '▣' },
+  { key: 'structure',   label: 'Structure',icon: '⬡' },
+  { key: 'fuelTanks',   label: 'Fuel',     icon: '▥' },
+];
+
+const SUGGESTIONS = [
+  "2 seat budget trainer for India",
+  "180 passenger long range wide body",
+  "12 seat turboprop commuter short runway",
+  "Single seat supersonic fighter",
+  "Electric 4 seat urban air taxi",
+  "Large cargo freighter 4 engines",
+];
+
+// ─── PARAM DISPLAY CONFIG ─────────────────────────────────────────────────
+const PARAM_SECTIONS = [
+  { title: 'Mission Profile', keys: [
+    {k:'aircraft_type', label:'Type', color:'accent'},
+    {k:'passengers', label:'Passengers', color:'accent2'},
+    {k:'range_km', label:'Range (km)', color:'green'},
+    {k:'cruise_speed_kmh', label:'Speed (km/h)', color:'accent2'},
+  ]},
+  { title: 'Propulsion', keys: [
+    {k:'engine_type', label:'Engine', color:'accent'},
+    {k:'number_of_engines', label:'# Engines', color:'accent2'},
+    {k:'fuel_type', label:'Fuel', color:'green'},
+  ]},
+  { title: 'Aerodynamics', keys: [
+    {k:'wing_type', label:'Wing', color:'accent'},
+    {k:'tail_type', label:'Tail', color:'accent2'},
+    {k:'landing_gear', label:'Gear', color:'green'},
+  ]},
+  { title: 'Dimensions & Weight', keys: [
+    {k:'wingspan_m', label:'Wingspan (m)', color:'accent'},
+    {k:'length_m', label:'Length (m)', color:'accent2'},
+    {k:'height_m', label:'Height (m)', color:'green'},
+    {k:'max_takeoff_weight_kg', label:'MTOW (kg)', color:'accent'},
+  ]},
+  { title: 'Structure', keys: [
+    {k:'material', label:'Material', color:'accent'},
+  ]},
+];
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────
+function App() {
+  const [messages, setMessages] = useState([
+    { role: 'ai', text: 'SYSTEM ONLINE. Describe your aircraft concept and I will generate a full design specification with 3D model. Try: "180 passenger long range jet" or "2 seat bush plane for India".' }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [params, setParams] = useState(null);
+  const [mode, setMode] = useState('concept');
+  const [layers, setLayers] = useState({
+    fuselage: true, wings: true, engines: true, tail: true,
+    landingGear: true, cabin: true, structure: false, fuelTanks: false
+  });
+
+  // Panel widths in px; viewer gets the remainder
+  const [leftW, setLeftW] = useState(280);
+  const [rightW, setRightW] = useState(260);
+  const layoutRef = useRef(null);
+  const draggingRef = useRef(null); // 'left' | 'right'
+  const startXRef = useRef(0);
+  const startWRef = useRef(0);
+
+  // Resizer mouse handlers
+  const onResizerMouseDown = (side, e) => {
+    e.preventDefault();
+    draggingRef.current = side;
+    startXRef.current = e.clientX;
+    startWRef.current = side === 'left' ? leftW : rightW;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const onMouseMove = e => {
+      if (!draggingRef.current || !layoutRef.current) return;
+      const totalW = layoutRef.current.clientWidth;
+      const RISER_W = 10; // two resizers × 5px each
+      const MIN = 120;
+      const delta = e.clientX - startXRef.current;
+      if (draggingRef.current === 'left') {
+        const newW = Math.max(MIN, Math.min(totalW - rightW - RISER_W - MIN * 2, startWRef.current + delta));
+        setLeftW(newW);
+      } else {
+        const newW = Math.max(MIN, Math.min(totalW - leftW - RISER_W - MIN * 2, startWRef.current - delta));
+        setRightW(newW);
+      }
+    };
+    const onMouseUp = () => {
+      draggingRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+  }, [leftW, rightW]);
+
+  const canvasRef = useRef(null);
+  const sceneRef = useRef({});
+
+  // Init Three.js
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0d1a2e);
+    // Grid - blueprint style
+    const grid = new THREE.GridHelper(20, 40, 0x1a3a5a, 0x112233);
+    grid.name = 'mainGrid';
+    scene.add(grid);
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
+    camera.position.set(3, 1.5, 4);
+    camera.lookAt(0, 0, 0);
+    // Lights
+    const ambient = new THREE.AmbientLight(0x304060, 0.6);
+    scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    key.position.set(4, 7, 5);
+    key.castShadow = true;
+    key.shadow.mapSize.width = 2048;
+    key.shadow.mapSize.height = 2048;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x6090ff, 0.5);
+    fill.position.set(-5, 2, -3);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffa060, 0.35);
+    rim.position.set(0, -3, 6);
+    scene.add(rim);
+    const top = new THREE.DirectionalLight(0xffffff, 0.4);
+    top.position.set(0, 10, 0);
+    scene.add(top);
+
+    // Orbit controls (manual)
+    let isDragging = false, prevX = 0, prevY = 0;
+    let theta = 0.4, phi = 0.4, radius = 5;
+    const updateCamera = () => {
+      camera.position.x = radius * Math.sin(theta) * Math.cos(phi);
+      camera.position.y = radius * Math.sin(phi);
+      camera.position.z = radius * Math.cos(theta) * Math.cos(phi);
+      camera.lookAt(0, 0, 0);
+    };
+    updateCamera();
+    canvas.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+    canvas.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      theta -= (e.clientX - prevX) * 0.01;
+      phi = Math.max(-1.2, Math.min(1.2, phi + (e.clientY - prevY) * 0.01));
+      prevX = e.clientX; prevY = e.clientY;
+      updateCamera();
+    });
+    canvas.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+
+  const zoomFactor = 1.1;
+
+  if (e.deltaY < 0) {
+    // Zoom in
+    radius /= zoomFactor;
+  } else {
+    // Zoom out
+    radius *= zoomFactor;
+  }
+
+  radius = Math.max(1.5, Math.min(30, radius));
+  updateCamera();
+});
+
+    // Resize
+    const resize = () => {
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    const resizeObs = new ResizeObserver(resize);
+    resizeObs.observe(canvas.parentElement);
+    resize();
+
+    sceneRef.current = { renderer, scene, camera, grid };
+    let rafId;
+    const animate = () => {
+      rafId = requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    };
+    animate();
+    return () => { cancelAnimationFrame(rafId); resizeObs.disconnect(); };
+  }, []);
+
+  // Rebuild model when params/mode/layers change
+  useEffect(() => {
+    const { scene } = sceneRef.current;
+    if (!scene) return;
+    // Switch background per mode
+    scene.background = new THREE.Color(mode === 'concept' ? 0x0d1a2e : 0x040810);
+    // Update grid color
+    const g = scene.getObjectByName('mainGrid');
+if (g && Array.isArray(g.material)) {
+  g.material[0].color.set(mode === 'concept' ? 0x1a3a5a : 0x0a2040);
+  g.material[1].color.set(mode === 'concept' ? 0x112233 : 0x06141e);
+}
+    if (!params) return;
+    // Remove old model
+    const old = scene.getObjectByName('aircraft');
+    if (old) scene.remove(old);
+    const model = buildAircraftModel(params, layers, mode);
+    model.name = 'aircraft';
+    scene.add(model);
+  }, [params, mode, layers]);
+
+  const toggleLayer = (key) => setLayers(l => ({ ...l, [key]: !l[key] }));
+
+  const sendMessage = async (text) => {
+    if (!text.trim() || loading) return;
+    setMessages(m => [...m, { role: 'user', text }]);
+    setInput('');
+    setLoading(true);
+    try {
+      const raw = await callLLM(text);
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      setParams(parsed);
+      setMessages(m => [...m, {
+        role: 'ai',
+        text: `DESIGN COMPLETE ✓ — ${parsed.aircraft_type} | ${parsed.passengers} pax | ${parsed.range_km.toLocaleString()} km | ${parsed.cruise_speed_kmh} km/h | ${parsed.engine_type} ×${parsed.number_of_engines}`
+      }]);
+    } catch (e) {
+      setMessages(m => [...m, { role: 'ai', text: `ERROR: ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{height:'100vh',display:'flex',flexDirection:'column'}}>
+      {/* TOP BAR */}
+      <div className="topbar">
+        <div className="topbar-logo">
+          <span className="logo-icon">✈</span>
+          AERO<span>-GUIDE</span>
+        </div>
+        <div className="topbar-center">
+          <button className={`mode-btn ${mode==='concept'?'active':''}`} onClick={()=>setMode('concept')}>CONCEPT</button>
+          <button className={`mode-btn ${mode==='realistic'?'active':''}`} onClick={()=>setMode('realistic')}>REALISTIC</button>
+        </div>
+        <div className="topbar-right">
+          <button
+            onClick={() => { setLeftW(280); setRightW(260); }}
+            style={{background:'transparent',border:'1px solid var(--border)',color:'var(--text-dim)',padding:'4px 10px',fontFamily:"'Orbitron',monospace",fontSize:'7px',letterSpacing:'1px',cursor:'pointer',transition:'all 0.2s'}}
+            onMouseEnter={e=>{e.target.style.borderColor='var(--accent)';e.target.style.color='var(--accent)'}}
+            onMouseLeave={e=>{e.target.style.borderColor='var(--border)';e.target.style.color='var(--text-dim)'}}
+            title="Reset panel layout"
+          >⟲ RESET LAYOUT</button>
+          <div className="status-dot"/>
+          <div className="status-text">AERO-GUIDE v2.1</div>
+        </div>
+      </div>
+
+      {/* MAIN LAYOUT */}
+      <div className="main-layout" ref={layoutRef} style={{flex:1,overflow:'hidden'}}>
+        {/* LEFT: CHAT PANEL */}
+        <div className="panel" style={{width: leftW, flexShrink:0}}>
+          <div className="panel-header">DESIGN CONSOLE</div>
+          <div className="chat-messages">
+            {messages.map((m, i) => (
+              <div key={i} className={`msg msg-${m.role}`}>
+                <div className="msg-label">{m.role === 'user' ? '▶ OPERATOR' : '◆ AI DESIGNER'}</div>
+                {m.text}
+              </div>
+            ))}
+            {loading && (
+              <div className="msg msg-ai">
+                <div className="msg-label">◆ AI DESIGNER</div>
+                <span style={{animation:'blink 1s infinite',display:'inline-block'}}>ANALYZING REQUEST...</span>
+              </div>
+            )}
+          </div>
+          <div className="suggestions">
+            <div className="suggest-label">QUICK DESIGNS</div>
+            {SUGGESTIONS.map((s, i) => (
+              <button key={i} className="suggest-btn" onClick={() => sendMessage(s)}>▸ {s}</button>
+            ))}
+          </div>
+          <div className="chat-input-area">
+            <textarea
+              className="chat-input"
+              placeholder="Describe your aircraft concept..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); }}}
+            />
+            <button className="send-btn" onClick={() => sendMessage(input)} disabled={loading || !input.trim()}>
+              {loading ? '...' : 'SEND'}
+            </button>
+          </div>
+        </div>
+
+        {/* RESIZER LEFT */}
+        <div className="resizer" onMouseDown={e => onResizerMouseDown('left', e)} title="Drag to resize"/>
+
+        {/* CENTER: 3D VIEWER */}
+        <div className="viewer-area" style={{flex:1,minWidth:200}}>
+          <canvas ref={canvasRef} className="viewer-canvas" style={{display:'block'}}/>
+          <div className="viewer-overlay">
+            <div className="viewer-grid-lines"/>
+            <div className="viewer-corners"/>
+            <div className="viewer-corner-bl"/>
+            <div className="viewer-corner-br"/>
+          </div>
+          {params && (
+            <div className="viewer-aircraft-name" style={{color: mode==='concept'?'#e8ddb5':'var(--accent)', textShadow: mode==='concept'?'0 0 15px rgba(232,221,181,0.4)':'var(--glow)'}}>
+              {params.aircraft_type}
+            </div>
+          )}
+          {/* Mode badge */}
+          <div style={{position:'absolute',top:14,right:14,fontFamily:"'Orbitron',monospace",fontSize:'8px',letterSpacing:'2px',padding:'4px 10px',border:`1px solid ${mode==='concept'?'#8a7a50':'var(--accent)'}`,color:mode==='concept'?'#e8ddb5':'var(--accent)',background:mode==='concept'?'rgba(13,26,46,0.8)':'rgba(4,8,16,0.8)',pointerEvents:'none'}}>
+            {mode==='concept'?'◈ BLUEPRINT DRAFT':'◉ 3D MODEL'}
+          </div>
+          {loading && (
+            <div className="loading-overlay">
+              <div className="loading-ring"/>
+              <div className="loading-text">GENERATING DESIGN</div>
+            </div>
+          )}
+          {!params && !loading && (
+            <div className="viewer-no-model">
+              <div className="viewer-no-model-icon">✈</div>
+              <div className="viewer-no-model-text">
+                AWAITING DESIGN INPUT<br/>
+                DRAG TO ORBIT · SCROLL TO ZOOM
+              </div>
+            </div>
+          )}
+          {params && (
+            <div className="viewer-info">
+              <div>SPAN <span>{params.wingspan_m}m</span></div>
+              <div>LENGTH <span>{params.length_m}m</span></div>
+              <div>MTOW <span>{params.max_takeoff_weight_kg.toLocaleString()}kg</span></div>
+              <div>MODE <span>{mode.toUpperCase()}</span></div>
+            </div>
+          )}
+          {/* LAYER CONTROLS overlay bottom-right */}
+          <div style={{position:'absolute',bottom:14,right:14,background:'rgba(4,8,16,0.85)',border:'1px solid var(--border)',padding:'8px',minWidth:200}}>
+            <div style={{fontFamily:"'Orbitron',monospace",fontSize:'7px',letterSpacing:'2px',color:'var(--text-dim)',marginBottom:'6px'}}>LAYER VISIBILITY</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px'}}>
+              {LAYER_CONFIG.map(l => (
+                <button key={l.key} className={`layer-btn ${layers[l.key] ? 'active' : ''}`} onClick={() => toggleLayer(l.key)}>
+                  <span className="layer-dot"/>
+                  {l.icon} {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* RESIZER RIGHT */}
+        <div className="resizer" onMouseDown={e => onResizerMouseDown('right', e)} title="Drag to resize"/>
+
+        {/* RIGHT: PARAMS PANEL */}
+        <div className="panel panel-right" style={{width: rightW, flexShrink:0}}>
+          <div className="panel-header">DESIGN PARAMETERS</div>
+          {params ? (
+            <>
+              <div className="summary-card">
+                <div className="summary-type">{params.aircraft_type}</div>
+                <div className="summary-sub">
+                  {params.number_of_engines}× {params.engine_type} · {params.wing_type}
+                </div>
+                <div className="summary-sub" style={{marginTop:3}}>
+                  WS {params.wingspan_m}m · L {params.length_m}m · H {params.height_m}m
+                </div>
+              </div>
+              <div className="params-scroll">
+                {PARAM_SECTIONS.map(section => (
+                  <div key={section.title} className="param-section">
+                    <div className="param-section-title">{section.title}</div>
+                    {section.keys.map(({k, label, color}) => (
+                      <div key={k} className="param-row">
+                        <span className="param-key">{label}</span>
+                        <span className={`param-val ${color === 'accent2' ? 'orange' : color === 'green' ? 'green' : ''}`}>
+                          {typeof params[k] === 'number' ? params[k].toLocaleString() : params[k]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              {/* JSON export */}
+              <div style={{padding:'8px',borderTop:'1px solid var(--border)',flexShrink:0}}>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify(params, null, 2)], {type:'application/json'});
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                    a.download = 'aircraft_design.json'; a.click();
+                  }}
+                  style={{width:'100%',background:'rgba(0,200,255,0.08)',border:'1px solid var(--accent)',color:'var(--accent)',padding:'7px',fontFamily:"'Orbitron',monospace",fontSize:'8px',letterSpacing:'1.5px',cursor:'pointer'}}
+                >
+                  ↓ EXPORT JSON
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="params-scroll">
+              <div className="no-params">
+                NO DESIGN LOADED<br/>
+                SUBMIT A REQUEST<br/>
+                TO BEGIN
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
