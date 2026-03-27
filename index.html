@@ -1297,18 +1297,13 @@ if (g && Array.isArray(g.material)) {
           <button className={`mode-btn ${mode==='realistic'?'active':''}`} onClick={()=>setMode('realistic')}>REALISTIC</button>
         </div>
         <div className="topbar-right">
-<button
-  onClick={() => {
-    setLeftW(280);
-    setRightW(260);
-
-    setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 50);
-  }}
->
-  ⟲ RESET LAYOUT
-</button>
+          <button
+            onClick={() => { setLeftW(280); setRightW(260); }}
+            style={{background:'transparent',border:'1px solid var(--border)',color:'var(--text-dim)',padding:'4px 10px',fontFamily:"'Orbitron',monospace",fontSize:'7px',letterSpacing:'1px',cursor:'pointer',transition:'all 0.2s'}}
+            onMouseEnter={e=>{e.target.style.borderColor='var(--accent)';e.target.style.color='var(--accent)'}}
+            onMouseLeave={e=>{e.target.style.borderColor='var(--border)';e.target.style.color='var(--text-dim)'}}
+            title="Reset panel layout"
+          >⟲ RESET LAYOUT</button>
           <div className="status-dot"/>
           <div className="status-text">AERO-GUIDE v2.1</div>
         </div>
